@@ -24,7 +24,7 @@ class NTPBackgroundImagesService;
     initWithBackgroundImagesService:
         (std::unique_ptr<ntp_background_images::NTPBackgroundImagesService>)
             service
-                        ads_service:(brave_ads::AdsService*)ads_service;
+                        ads_service:(nullable brave_ads::AdsService*)ads_service;
 
 @end
 
