@@ -51,7 +51,6 @@ group("browser") {
     "//brave/ios/browser/application_context",
     "//brave/ios/browser/brave_news",
     "//brave/ios/browser/brave_origin",
-    "//brave/ios/browser/brave_vpn",
     "//brave/ios/browser/brave_wallet",
     "//brave/ios/browser/playlist",
     "//brave/ios/browser/policy",
