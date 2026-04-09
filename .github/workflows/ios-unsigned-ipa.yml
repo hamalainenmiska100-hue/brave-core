@@ -1,0 +1,88 @@
+name: iOS Unsigned IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-unsigned-ipa:
+    runs-on: macos-15
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create expected brave-core source layout
+        run: |
+          mkdir -p /Users/runner/work/src
+          ln -sfn "$GITHUB_WORKSPACE" /Users/runner/work/src/brave
+          # Keep compatibility with other runner workspace layouts.
+          for ROOT_DIR in "$(cd "$GITHUB_WORKSPACE/.." && pwd)" "$(cd "$GITHUB_WORKSPACE/../.." && pwd)"; do
+            mkdir -p "$ROOT_DIR/src"
+            ln -sfn "$GITHUB_WORKSPACE" "$ROOT_DIR/src/brave"
+          done
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.11.1
+          cache: npm
+
+      - name: Free disk space on GitHub-hosted macOS runner
+        run: |
+          echo "Disk usage before cleanup:"
+          df -h
+          sudo rm -rf /Library/Developer/CoreSimulator/Profiles/Runtimes/* || true
+          sudo rm -rf /Users/runner/Library/Android || true
+          sudo rm -rf /Users/runner/.android || true
+          sudo rm -rf /Users/runner/.gradle || true
+          sudo rm -rf /Users/runner/hostedtoolcache/CodeQL || true
+          echo "Disk usage after cleanup:"
+          df -h
+
+      - name: Install npm dependencies
+        run: npm install
+
+      - name: Bootstrap Chromium dependencies for iOS
+        run: npm run sync -- --init --target_os=ios --target_arch=arm64 --no-history --delete_unused_deps
+
+      - name: Build BraveCore for iOS (ads/rewards/vpn disabled)
+        run: |
+          npm run build -- Release \
+            --target_os ios \
+            --target_arch arm64 \
+            --target_environment device \
+            --gn enable_brave_ads:false \
+            --gn enable_brave_rewards:false \
+            --gn enable_brave_vpn:false
+
+      - name: Build iOS JavaScript bundle
+        run: npm run ios_pack_js
+
+      - name: Archive unsigned app
+        run: |
+          xcodebuild \
+            -project ios/brave-ios/App/Client.xcodeproj \
+            -scheme "Release (No Core)" \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath "$PWD/out/ios_unsigned/Brave.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            archive
+
+      - name: Package unsigned IPA
+        run: |
+          ARCHIVE_PATH="$PWD/out/ios_unsigned/Brave.xcarchive"
+          APP_PATH="$(find "$ARCHIVE_PATH/Products/Applications" -maxdepth 1 -name '*.app' | head -n 1)"
+          mkdir -p "$PWD/out/ios_unsigned/Payload"
+          cp -R "$APP_PATH" "$PWD/out/ios_unsigned/Payload/"
+          cd "$PWD/out/ios_unsigned"
+          /usr/bin/zip -qry Brave-unsigned.ipa Payload
+
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: brave-ios-unsigned-ipa
+          path: out/ios_unsigned/Brave-unsigned.ipa
