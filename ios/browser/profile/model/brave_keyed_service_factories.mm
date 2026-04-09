@@ -11,7 +11,6 @@
 #include "brave/ios/browser/ai_chat/tab_tracker_service_factory.h"
 #include "brave/ios/browser/api/webcompat_reporter/webcompat_reporter_service_factory.h"
 #include "brave/ios/browser/brave_account/brave_account_service_factory_ios.h"
-#include "brave/ios/browser/brave_ads/ads_service_factory_ios.h"
 #include "brave/ios/browser/brave_origin/brave_origin_service_factory.h"
 #include "brave/ios/browser/brave_shields/brave_shields_settings_service_factory.h"
 #include "brave/ios/browser/brave_wallet/asset_ratio_service_factory.h"
@@ -36,7 +35,6 @@ void EnsureProfileKeyedServiceFactoriesBuilt() {
   if (brave_account::features::IsBraveAccountEnabled()) {
     brave_account::BraveAccountServiceFactoryIOS::GetInstance();
   }
-  brave_ads::AdsServiceFactoryIOS::GetInstance();
   serp_metrics::SerpMetricsServiceFactoryIOS::GetInstance();
   brave_favicon::BraveIOSFaviconLoaderFactory::GetInstance();
   brave_origin::BraveOriginServiceFactory::GetInstance();
