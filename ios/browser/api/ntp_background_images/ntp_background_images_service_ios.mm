@@ -96,13 +96,15 @@ class AdsServiceObserverBridge : public brave_ads::AdsServiceObserver {
     initWithBackgroundImagesService:
         (std::unique_ptr<ntp_background_images::NTPBackgroundImagesService>)
             service
-                        ads_service:(brave_ads::AdsService*)ads_service {
+                        ads_service:(nullable brave_ads::AdsService*)ads_service {
   if ((self = [super init])) {
     _service = std::move(service);
     _adsService = ads_service;
-    _adsServiceObserverBridge =
-        std::make_unique<AdsServiceObserverBridge>(self);
-    _adsService->AddObserver(_adsServiceObserverBridge.get());
+    if (_adsService) {
+      _adsServiceObserverBridge =
+          std::make_unique<AdsServiceObserverBridge>(self);
+      _adsService->AddObserver(_adsServiceObserverBridge.get());
+    }
     _observerBridge =
         std::make_unique<NTPBackgroundImagesServiceObserverBridge>(self);
     _service->AddObserver(_observerBridge.get());
@@ -112,7 +114,9 @@ class AdsServiceObserverBridge : public brave_ads::AdsServiceObserver {
 }
 
 - (void)dealloc {
-  _adsService->RemoveObserver(_adsServiceObserverBridge.get());
+  if (_adsService && _adsServiceObserverBridge) {
+    _adsService->RemoveObserver(_adsServiceObserverBridge.get());
+  }
   _service->RemoveObserver(_observerBridge.get());
 }
 
