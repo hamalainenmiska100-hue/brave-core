@@ -1,69 +1,25 @@
-name: iOS Unsigned IPA
+Run npm run build -- Release \
 
-on:
-  workflow_dispatch:
+> brave-core@1.91.27 build
+> node ./build/commands/scripts/commands.js build Release --target_os ios --target_arch arm64 --target_environment device --gn enable_brave_ads:false --gn enable_brave_rewards:false --gn enable_brave_vpn:false
 
-jobs:
-  build-unsigned-ipa:
-    runs-on: macos-15
-    timeout-minutes: 180
+node:fs:440
+    return binding.readFileUtf8(path, stringToFlags(options.flag));
+                   ^
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+Error: ENOENT: no such file or directory, open '/Users/runner/work/src/brave/package.json'
+    at Object.readFileSync (node:fs:440:20)
+    at #loadPackageJson (file:///Users/runner/work/brave-core/brave-core/build/commands/lib/envConfig.ts:303:35)
+    at new EnvConfig (file:///Users/runner/work/brave-core/brave-core/build/commands/lib/envConfig.ts:37:51)
+    at file:///Users/runner/work/brave-core/brave-core/build/commands/lib/config.js:20:19
+    at ModuleJob.run (node:internal/modules/esm/module_job:377:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:671:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/runner/work/src/brave/package.json'
+}
 
-      - name: Create expected brave-core source layout
-        run: |
-          ROOT_DIR="$(cd "$GITHUB_WORKSPACE/../../.." && pwd)"
-          mkdir -p "$ROOT_DIR/src"
-          ln -sfn "$GITHUB_WORKSPACE" "$ROOT_DIR/src/brave"
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24.11.1
-          cache: npm
-
-      - name: Install npm dependencies
-        run: npm install
-
-      - name: Build BraveCore for iOS (ads/rewards/vpn disabled)
-        run: |
-          npm run build -- Release \
-            --target_os ios \
-            --target_arch arm64 \
-            --target_environment device \
-            --gn enable_brave_ads:false \
-            --gn enable_brave_rewards:false \
-            --gn enable_brave_vpn:false
-
-      - name: Build iOS JavaScript bundle
-        run: npm run ios_pack_js
-
-      - name: Archive unsigned app
-        run: |
-          xcodebuild \
-            -project ios/brave-ios/App/Client.xcodeproj \
-            -scheme "Release (No Core)" \
-            -configuration Release \
-            -sdk iphoneos \
-            -archivePath "$PWD/out/ios_unsigned/Brave.xcarchive" \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            archive
-
-      - name: Package unsigned IPA
-        run: |
-          ARCHIVE_PATH="$PWD/out/ios_unsigned/Brave.xcarchive"
-          APP_PATH="$(find "$ARCHIVE_PATH/Products/Applications" -maxdepth 1 -name '*.app' | head -n 1)"
-          mkdir -p "$PWD/out/ios_unsigned/Payload"
-          cp -R "$APP_PATH" "$PWD/out/ios_unsigned/Payload/"
-          cd "$PWD/out/ios_unsigned"
-          /usr/bin/zip -qry Brave-unsigned.ipa Payload
-
-      - name: Upload unsigned IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: brave-ios-unsigned-ipa
-          path: out/ios_unsigned/Brave-unsigned.ipa
+Node.js v24.11.1
+Error: Process completed with exit code 1.
